@@ -446,41 +446,42 @@ void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_ga
     } while (0);
 }
 
-void bluetooth_init(esp_err_t ret)
+esp_err_t bluetooth_init()
 {
     ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
 
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-    ret = esp_bt_controller_init(&bt_cfg);
+    esp_err_t ret = esp_bt_controller_init(&bt_cfg);
     if (ret)
     {
         ESP_LOGE(SERIAL_TAG, "%s initialize controller failed: %s\n", __func__, esp_err_to_name(ret));
-        return;
+        return ret;
     }
 
     ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
     if (ret)
     {
         ESP_LOGE(SERIAL_TAG, "%s enable controller failed: %s\n", __func__, esp_err_to_name(ret));
-        return;
+        return ret;
     }
 
     ret = esp_bluedroid_init();
     if (ret)
     {
         ESP_LOGE(SERIAL_TAG, "%s init bluetooth failed: %s\n", __func__, esp_err_to_name(ret));
-        return;
+        return ret;
     }
 
     ret = esp_bluedroid_enable();
     if (ret)
     {
         ESP_LOGE(SERIAL_TAG, "%s enable bluetooth failed: %s\n", __func__, esp_err_to_name(ret));
-        return;
+        return ret;
     }
+    return ret;
 }
 
-void bluetooth_client_init(esp_err_t ret)
+esp_err_t bluetooth_client_init()
 {
     // Copy the new UUID128 to the profile
     memcpy(remote_filter_service_uuid.uuid.uuid128, gatt_primary_service, ESP_UUID_LEN_128);
@@ -488,11 +489,11 @@ void bluetooth_client_init(esp_err_t ret)
     memcpy(remote_filter_char_uuid.uuid.uuid128, navigation_update_service_uuid, ESP_UUID_LEN_128);
 
     //register the  callback function to the gap module
-    ret = esp_ble_gap_register_callback(esp_gap_cb);
+    esp_err_t ret = esp_ble_gap_register_callback(esp_gap_cb);
     if (ret)
     {
         ESP_LOGE(SERIAL_TAG, "%s gap register failed, error code = %x\n", __func__, ret);
-        return;
+        return ret;
     }
 
     //register the callback function to the gattc module
@@ -500,7 +501,7 @@ void bluetooth_client_init(esp_err_t ret)
     if (ret)
     {
         ESP_LOGE(SERIAL_TAG, "%s gattc register failed, error code = %x\n", __func__, ret);
-        return;
+        return ret;
     }
 
     ret = esp_ble_gattc_app_register(PROFILE_A_APP_ID);
@@ -513,4 +514,5 @@ void bluetooth_client_init(esp_err_t ret)
     {
         ESP_LOGE(SERIAL_TAG, "set local  MTU failed, error code = %x", local_mtu_ret);
     }
+    return ret;
 }
