@@ -12,15 +12,7 @@ static esp_gattc_descr_elem_t *descr_elem_result = NULL;
 
 /* One gatt-based profile one app_id and one gattc_if, this array will store the gattc interface number returned by ESP_GATTS_REG_EVT */
 static struct gattc_profile_inst komoot_gatt_profile[PROFILE_NUM] = {
-    [PROFILE_A_APP_ID] = {
-        .gattc_cb = gattc_profile_event_handler,
-        .gattc_if = ESP_GATT_IF_NONE, /* Not get the gatt_if, so initial is ESP_GATT_IF_NONE */
-    },
-    [GATT_PROFILE_NAVIGATION_UPDATES] = {
-        .gattc_cb = gattc_profile_event_handler,
-        .gattc_if = ESP_GATT_IF_NONE, /* Not get the gatt_if, so initial is ESP_GATT_IF_NONE */
-    },
-    [GATT_PROFILE_NAVIGATION_NOTIFICATION] = {
+    [PROFILE_KOMOOT_GATT] = {
         .gattc_cb = gattc_profile_event_handler,
         .gattc_if = ESP_GATT_IF_NONE, /* Not get the gatt_if, so initial is ESP_GATT_IF_NONE */
     },
@@ -43,10 +35,10 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
     case ESP_GATTC_CONNECT_EVT:
     {
         ESP_LOGI(SERIAL_TAG, "ESP_GATTC_CONNECT_EVT conn_id %d, if %d", p_data->connect.conn_id, gattc_if);
-        komoot_gatt_profile[PROFILE_A_APP_ID].conn_id = p_data->connect.conn_id;
-        memcpy(komoot_gatt_profile[PROFILE_A_APP_ID].remote_bda, p_data->connect.remote_bda, sizeof(esp_bd_addr_t));
+        komoot_gatt_profile[PROFILE_KOMOOT_GATT].conn_id = p_data->connect.conn_id;
+        memcpy(komoot_gatt_profile[PROFILE_KOMOOT_GATT].remote_bda, p_data->connect.remote_bda, sizeof(esp_bd_addr_t));
         ESP_LOGI(SERIAL_TAG, "REMOTE BDA:");
-        esp_log_buffer_hex(SERIAL_TAG, komoot_gatt_profile[PROFILE_A_APP_ID].remote_bda, sizeof(esp_bd_addr_t));
+        esp_log_buffer_hex(SERIAL_TAG, komoot_gatt_profile[PROFILE_KOMOOT_GATT].remote_bda, sizeof(esp_bd_addr_t));
         esp_err_t mtu_ret = esp_ble_gattc_send_mtu_req(gattc_if, p_data->connect.conn_id);
         if (mtu_ret)
         {
@@ -88,8 +80,8 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
             {
                 ESP_LOGI(SERIAL_TAG, "service uuid128 found");
                 get_server = true;
-                komoot_gatt_profile[PROFILE_A_APP_ID].service_start_handle = p_data->search_res.start_handle;
-                komoot_gatt_profile[PROFILE_A_APP_ID].service_end_handle = p_data->search_res.end_handle;
+                komoot_gatt_profile[PROFILE_KOMOOT_GATT].service_start_handle = p_data->search_res.start_handle;
+                komoot_gatt_profile[PROFILE_KOMOOT_GATT].service_end_handle = p_data->search_res.end_handle;
             }
             else
             {
@@ -123,8 +115,8 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
             esp_gatt_status_t status = esp_ble_gattc_get_attr_count(gattc_if,
                                                                     p_data->search_cmpl.conn_id,
                                                                     ESP_GATT_DB_CHARACTERISTIC,
-                                                                    komoot_gatt_profile[PROFILE_A_APP_ID].service_start_handle,
-                                                                    komoot_gatt_profile[PROFILE_A_APP_ID].service_end_handle,
+                                                                    komoot_gatt_profile[PROFILE_KOMOOT_GATT].service_start_handle,
+                                                                    komoot_gatt_profile[PROFILE_KOMOOT_GATT].service_end_handle,
                                                                     INVALID_HANDLE,
                                                                     &count);
             if (status != ESP_GATT_OK)
@@ -143,8 +135,8 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
                 {
                     status = esp_ble_gattc_get_char_by_uuid(gattc_if,
                                                             p_data->search_cmpl.conn_id,
-                                                            komoot_gatt_profile[PROFILE_A_APP_ID].service_start_handle,
-                                                            komoot_gatt_profile[PROFILE_A_APP_ID].service_end_handle,
+                                                            komoot_gatt_profile[PROFILE_KOMOOT_GATT].service_start_handle,
+                                                            komoot_gatt_profile[PROFILE_KOMOOT_GATT].service_end_handle,
                                                             remote_filter_char_uuid,
                                                             char_elem_result,
                                                             &count);
@@ -156,8 +148,8 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
                     /*  Every service have only one char in our 'ESP_GATTS_DEMO' demo, so we used first 'char_elem_result' */
                     if (count > 0 && (char_elem_result[0].properties & ESP_GATT_CHAR_PROP_BIT_NOTIFY))
                     {
-                        komoot_gatt_profile[PROFILE_A_APP_ID].char_handle = char_elem_result[0].char_handle;
-                        esp_ble_gattc_register_for_notify(gattc_if, komoot_gatt_profile[PROFILE_A_APP_ID].remote_bda, char_elem_result[0].char_handle);
+                        komoot_gatt_profile[PROFILE_KOMOOT_GATT].char_handle = char_elem_result[0].char_handle;
+                        esp_ble_gattc_register_for_notify(gattc_if, komoot_gatt_profile[PROFILE_KOMOOT_GATT].remote_bda, char_elem_result[0].char_handle);
                     }
                 }
                 /* free char_elem_result */
@@ -181,11 +173,11 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
             uint16_t count = 0;
             uint16_t notify_en = 1;
             esp_gatt_status_t ret_status = esp_ble_gattc_get_attr_count(gattc_if,
-                                                                        komoot_gatt_profile[PROFILE_A_APP_ID].conn_id,
+                                                                        komoot_gatt_profile[PROFILE_KOMOOT_GATT].conn_id,
                                                                         ESP_GATT_DB_DESCRIPTOR,
-                                                                        komoot_gatt_profile[PROFILE_A_APP_ID].service_start_handle,
-                                                                        komoot_gatt_profile[PROFILE_A_APP_ID].service_end_handle,
-                                                                        komoot_gatt_profile[PROFILE_A_APP_ID].char_handle,
+                                                                        komoot_gatt_profile[PROFILE_KOMOOT_GATT].service_start_handle,
+                                                                        komoot_gatt_profile[PROFILE_KOMOOT_GATT].service_end_handle,
+                                                                        komoot_gatt_profile[PROFILE_KOMOOT_GATT].char_handle,
                                                                         &count);
             if (ret_status != ESP_GATT_OK)
             {
@@ -201,7 +193,7 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
                 else
                 {
                     ret_status = esp_ble_gattc_get_descr_by_char_handle(gattc_if,
-                                                                        komoot_gatt_profile[PROFILE_A_APP_ID].conn_id,
+                                                                        komoot_gatt_profile[PROFILE_KOMOOT_GATT].conn_id,
                                                                         p_data->reg_for_notify.handle,
                                                                         notify_descr_uuid,
                                                                         descr_elem_result,
@@ -210,25 +202,6 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
                     {
                         ESP_LOGE(SERIAL_TAG, "esp_ble_gattc_get_descr_by_char_handle error");
                     }
-                    /* Every char has only one descriptor in our 'ESP_GATTS_DEMO' demo, so we used first 'descr_elem_result' */
-                    if (count > 0 && descr_elem_result[0].uuid.len == ESP_UUID_LEN_16 && descr_elem_result[0].uuid.uuid.uuid16 == ESP_GATT_UUID_CHAR_CLIENT_CONFIG)
-                    {
-                        ret_status = esp_ble_gattc_write_char_descr(gattc_if,
-                                                                    komoot_gatt_profile[PROFILE_A_APP_ID].conn_id,
-                                                                    descr_elem_result[0].handle,
-                                                                    sizeof(notify_en),
-                                                                    (uint8_t *)&notify_en,
-                                                                    ESP_GATT_WRITE_TYPE_RSP,
-                                                                    ESP_GATT_AUTH_REQ_NONE);
-                    }
-
-                    if (ret_status != ESP_GATT_OK)
-                    {
-                        ESP_LOGE(SERIAL_TAG, "esp_ble_gattc_write_char_descr error");
-                    }
-
-                    /* free descr_elem_result */
-                    free(descr_elem_result);
                 }
             }
             else
@@ -262,8 +235,8 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
             write_char_data[i] = i % 256;
         }
         esp_ble_gattc_write_char(gattc_if,
-                                 komoot_gatt_profile[PROFILE_A_APP_ID].conn_id,
-                                 komoot_gatt_profile[PROFILE_A_APP_ID].char_handle,
+                                 komoot_gatt_profile[PROFILE_KOMOOT_GATT].conn_id,
+                                 komoot_gatt_profile[PROFILE_KOMOOT_GATT].char_handle,
                                  sizeof(write_char_data),
                                  write_char_data,
                                  ESP_GATT_WRITE_TYPE_RSP,
@@ -372,7 +345,7 @@ void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
                         connect = true;
                         ESP_LOGI(SERIAL_TAG, "connect to the remote device.");
                         esp_ble_gap_stop_scanning();
-                        esp_ble_gattc_open(komoot_gatt_profile[PROFILE_A_APP_ID].gattc_if, scan_result->scan_rst.bda, scan_result->scan_rst.ble_addr_type, true);
+                        esp_ble_gattc_open(komoot_gatt_profile[PROFILE_KOMOOT_GATT].gattc_if, scan_result->scan_rst.bda, scan_result->scan_rst.ble_addr_type, true);
                     }
                 }
             }
@@ -518,7 +491,7 @@ esp_err_t bluetooth_client_init()
         return ret;
     }
 
-    ret = esp_ble_gattc_app_register(PROFILE_A_APP_ID);
+    ret = esp_ble_gattc_app_register(PROFILE_KOMOOT_GATT);
     if (ret)
     {
         ESP_LOGE(SERIAL_TAG, "%s gattc app register failed, error code = %x\n", __func__, ret);

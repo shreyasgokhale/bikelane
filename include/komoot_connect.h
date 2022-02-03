@@ -17,10 +17,8 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 
-#define PROFILE_NUM 3
-#define PROFILE_A_APP_ID 0
-#define GATT_PROFILE_NAVIGATION_UPDATES 1
-#define GATT_PROFILE_NAVIGATION_NOTIFICATION 2
+#define PROFILE_NUM 1
+#define PROFILE_KOMOOT_GATT 0
 #define INVALID_HANDLE 0
 
 struct gattc_profile_inst
