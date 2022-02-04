@@ -171,7 +171,6 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
         else
         {
             uint16_t count = 0;
-            uint16_t notify_en = 1;
             esp_gatt_status_t ret_status = esp_ble_gattc_get_attr_count(gattc_if,
                                                                         komoot_gatt_profile[PROFILE_KOMOOT_GATT].conn_id,
                                                                         ESP_GATT_DB_DESCRIPTOR,
@@ -214,13 +213,14 @@ void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc
     case ESP_GATTC_NOTIFY_EVT:
         if (p_data->notify.is_notify)
         {
-            ESP_LOGI(SERIAL_TAG, "ESP_GATTC_NOTIFY_EVT, receive notify value:");
+            ESP_LOGI(SERIAL_TAG, "ESP_GATTC_NOTIFY_EVT, receive notify value with size %d:", p_data->notify.value_len);
         }
         else
         {
             ESP_LOGI(SERIAL_TAG, "ESP_GATTC_NOTIFY_EVT, receive indicate value:");
         }
-        esp_log_buffer_hex(SERIAL_TAG, p_data->notify.value, p_data->notify.value_len);
+        // esp_log_buffer_hex(SERIAL_TAG, p_data->notify.value, p_data->notify.value_len);
+        parse_navigation_notification(p_data->notify.value, p_data->notify.value_len);
         break;
     case ESP_GATTC_WRITE_DESCR_EVT:
         if (p_data->write.status != ESP_GATT_OK)

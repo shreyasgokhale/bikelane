@@ -17,6 +17,9 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 
+
+#include "bikelane_logic.h"
+
 #define PROFILE_NUM 1
 #define PROFILE_KOMOOT_GATT 0
 #define INVALID_HANDLE 0
