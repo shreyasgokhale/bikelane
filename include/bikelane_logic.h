@@ -10,9 +10,9 @@
 
 typedef struct
 {
-    uint32_t identifier;
-    uint8_t direction;
-    uint32_t distnace;
+    uint32_t identifier : 32;
+    uint8_t direction : 8;
+    uint32_t distnace : 16;
 } fixed_data;
 
 // 9 bytes
